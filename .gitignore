@@ -1,0 +1,25 @@
+# Dokumen internal: berisi path lokal PC, hitungan biaya, dan alasan bisnis.
+# JANGAN pernah di-commit ke repo publik.
+HANDOFF.md
+
+# Helper dev lokal: berisi path profil Chrome di PC ini.
+tools/fix-chrome-lock.sh
+
+# Folder deploy, DIGENERATE oleh tools/build-dist.js
+dist/
+
+# Sampah OS
+Thumbs.db
+desktop.ini
+.DS_Store
+._*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# Node (project ini nol dependency, ini cuma pagar)
+node_modules/
+package-lock.json

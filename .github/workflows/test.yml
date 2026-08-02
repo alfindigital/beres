@@ -1,0 +1,67 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Project ini nol dependency, jadi tidak ada langkah install.
+      - name: Cek sintaks
+        run: |
+          node --check js/parse.js
+          node --check js/app.js
+          node --check sw.js
+          node -e "JSON.parse(require('fs').readFileSync('manifest.webmanifest','utf8'))"
+
+      - name: Tes parser (82 kasus)
+        run: node test-parse.js
+
+      - name: Tes ketahanan data (18 kasus)
+        run: node tools/test-ketahanan.js
+
+      - name: Pastikan cache buster sinkron
+        run: |
+          v=$(grep -o 'style\.css?v=[0-9]*' index.html | head -1 | grep -o '[0-9]*$')
+          echo "versi aset: v$v"
+          grep -q "style.css?v=$v" sw.js || { echo "MISMATCH: sw.js beda versi dengan index.html"; exit 1; }
+          grep -q "app.js?v=$v" sw.js    || { echo "MISMATCH: app.js di sw.js beda versi"; exit 1; }
+          grep -q "beres-v$v" sw.js      || { echo "MISMATCH: nama CACHE bukan beres-v$v"; exit 1; }
+          echo "sinkron semua"
+
+      - name: Pastikan nol path pribadi bocor
+        run: |
+          # Kecualikan workflow ini sendiri: dia memuat pola pencarian, bukan path asli.
+          if grep -rIn "C:[/\\\\]Users" --exclude-dir=.git --exclude-dir=.github . ; then
+            echo "BOCOR: ada path lokal di repo"; exit 1
+          fi
+          echo "bersih"
+
+      - name: Pastikan nol permintaan pihak ketiga
+        run: |
+          # Cari hanya di URL yang benar-benar dimuat (src/href/url), bukan di komentar.
+          if grep -rInE "(src|href)=[\"'][^\"']*(googleapis|gstatic)" index.html ; then
+            echo "BOCOR: index.html masih memuat aset pihak ketiga"; exit 1
+          fi
+          if grep -rInE "url\([^)]*(googleapis|gstatic)" css/style.css ; then
+            echo "BOCOR: CSS masih memuat aset pihak ketiga"; exit 1
+          fi
+          echo "nol permintaan keluar"
+
+      - name: Build dist (daftar putih)
+        run: |
+          node tools/build-dist.js
+          if find dist -name "*.md" -o -path "dist/tools/*" | grep -q . ; then
+            echo "BOCOR: dokumen internal masuk dist"; exit 1
+          fi
+          echo "dist bersih: $(find dist -type f | wc -l) file"

@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="id" data-theme="dark" data-accent="lime">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5">
+<!-- CSP juga dipasang di _headers (untuk produksi). Meta ini menutup celah saat
+     dibuka lokal atau lewat file://, di mana header server tidak berlaku.
+     App nol eval, nol skrip eksternal, nol permintaan keluar, jadi CSP bisa rapat.
+     'unsafe-inline' pada style-src perlu karena warna proyek dipasang via atribut style. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<title>beres. - To Do List Bahasa Indonesia</title>
+<meta name="description" content="Tulis 'bayar kos besok jam 9 !p1 #keuangan', langsung jadi tugas. Offline, tanpa akun, tanpa iklan.">
+<meta name="theme-color" content="#0B0B0C">
+<meta name="color-scheme" content="dark light">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="beres.">
+<meta name="mobile-web-app-capable" content="yes">
+
+<meta property="og:title" content="beres. - To Do List Bahasa Indonesia">
+<meta property="og:description" content="Tulis 'bayar kos besok jam 9 !p1 #keuangan', langsung jadi tugas. Offline, tanpa akun, tanpa iklan.">
+<meta property="og:type" content="website">
+
+<link rel="preload" href="fonts/instrument-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/style.css?v=3">
+</head>
+<body>
+
+<div class="scrim" id="scrim" hidden></div>
+
+<!-- ============ RAK KIRI ============ -->
+<aside class="rak" id="rak" aria-label="Navigasi">
+  <div class="rak__top">
+    <div class="brand">
+      <span class="brand__word">beres</span><span class="brand__dot" aria-hidden="true"></span>
+    </div>
+    <button class="iconbtn only-mobile" id="btnRakClose" type="button" aria-label="Tutup menu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+
+  <nav class="nav" id="navView">
+    <button class="nav__i" type="button" data-view="today">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v15H4zM4 10h16M9 3v4M15 3v4"/></svg>
+      <span>Hari ini</span><b data-count="today"></b>
+    </button>
+    <button class="nav__i" type="button" data-view="upcoming">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v15H4zM4 10h16M8 14h3M8 17.5h8"/></svg>
+      <span>Nanti</span><b data-count="upcoming"></b>
+    </button>
+    <button class="nav__i" type="button" data-view="inbox">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13l2.5-8h11L20 13v6.5H4zM4 13h5l1 2h4l1-2h5"/></svg>
+      <span>Kotak masuk</span><b data-count="inbox"></b>
+    </button>
+    <button class="nav__i" type="button" data-view="all">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      <span>Semua</span><b data-count="all"></b>
+    </button>
+    <button class="nav__i" type="button" data-view="done">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5 11-11"/></svg>
+      <span>Kelar</span><b data-count="done"></b>
+    </button>
+  </nav>
+
+  <div class="rak__sec">
+    <p class="rak__label"><span>Proyek</span>
+      <button class="iconbtn iconbtn--s" id="btnAddProject" type="button" aria-label="Proyek baru">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </p>
+    <nav class="nav" id="navProject"></nav>
+  </div>
+
+  <div class="rak__sec" id="secLabel" hidden>
+    <p class="rak__label"><span>Label</span></p>
+    <nav class="tags" id="navLabel"></nav>
+  </div>
+
+  <div class="rak__foot">
+    <button class="nav__i" type="button" id="btnStats">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19.5V11M12 19.5V4.5M19 19.5v-6"/></svg>
+      <span>Statistik</span>
+    </button>
+    <button class="nav__i" type="button" id="btnSettings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.1"/><path d="M12 3.4v2M12 18.6v2M3.4 12h2M18.6 12h2M5.9 5.9l1.4 1.4M16.7 16.7l1.4 1.4M18.1 5.9l-1.4 1.4M7.3 16.7l-1.4 1.4"/></svg>
+      <span>Setelan</span>
+    </button>
+    <p class="credit">
+      <a href="https://alfindigital.com" target="_blank" rel="noopener noreferrer">@alfindigital</a>
+      <span aria-hidden="true">&middot;</span><span>offline, tanpa akun</span>
+    </p>
+  </div>
+</aside>
+
+<!-- ============ ISI ============ -->
+<main class="app">
+  <header class="bar">
+    <button class="iconbtn only-mobile" id="btnRakOpen" type="button" aria-label="Buka menu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <div class="bar__txt">
+      <h1 id="viewTitle">Hari ini</h1>
+      <p id="viewSub"></p>
+    </div>
+    <div class="bar__right">
+      <button class="iconbtn" id="btnFind" type="button" aria-label="Cari">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8L20.5 20.5"/></svg>
+      </button>
+      <button class="iconbtn" id="btnSort" type="button" aria-label="Urutkan">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15M7 19.5l-3-3M7 19.5l3-3M13 6.5h8M13 12h6M13 17.5h4"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="find" id="findRow" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8L20.5 20.5"/></svg>
+    <input id="findInput" type="search" placeholder="cari tugas, proyek, label..." autocomplete="off" aria-label="Cari tugas">
+    <button class="iconbtn iconbtn--s" id="btnFindClear" type="button" aria-label="Bersihkan">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+
+  <form class="quick" id="quickForm" autocomplete="off">
+    <span class="quick__plus" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    </span>
+    <input id="quickInput" type="text" placeholder="tulis aja, contoh: bayar kos besok jam 9 !p1 #keuangan" aria-label="Tugas baru" enterkeyhint="done">
+    <button class="primary primary--s" id="quickGo" type="submit">Tambah</button>
+  </form>
+  <div class="tokens" id="quickTokens" aria-live="polite"></div>
+
+  <section class="list" id="list"></section>
+  <div class="kosong" id="kosong" hidden></div>
+</main>
+
+<button class="fab" id="fab" type="button" aria-label="Tambah tugas">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<nav class="tabs" id="tabs" aria-label="Menu bawah">
+  <button class="tabs__i" type="button" data-view="today">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v15H4zM4 10h16M9 3v4M15 3v4"/></svg><span>Hari ini</span>
+  </button>
+  <button class="tabs__i" type="button" data-view="upcoming">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v15H4zM4 10h16M8 14h3M8 17.5h8"/></svg><span>Nanti</span>
+  </button>
+  <button class="tabs__i" type="button" id="tabFocus">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h4V9H4zM10 18h4V4h-4zM16 18h4v-6h-4z"/></svg><span>Fokus</span>
+  </button>
+  <button class="tabs__i" type="button" id="tabStats">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19.5V11M12 19.5V4.5M19 19.5v-6"/></svg><span>Statistik</span>
+  </button>
+</nav>
+
+<div class="toast" id="toast" hidden>
+  <span id="toastMsg"></span>
+  <button class="toast__act" id="toastAct" type="button">Urungkan</button>
+</div>
+
+<!-- ============ SHEET: TUGAS ============ -->
+<section class="sheet" id="sheetTask" hidden aria-labelledby="taskTitle">
+  <div class="sheet__grab" aria-hidden="true"></div>
+  <div class="sheet__head">
+    <h2 id="taskTitle">Tugas baru</h2>
+    <button class="iconbtn" data-close type="button" aria-label="Tutup">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="sheet__body">
+    <input class="big" id="tTitle" type="text" placeholder="mau ngerjain apa?" aria-label="Judul tugas" autocomplete="off">
+    <div class="tokens" id="tTokens"></div>
+    <textarea id="tNote" rows="2" placeholder="catatan (opsional)" aria-label="Catatan"></textarea>
+
+    <p class="label">Kapan</p>
+    <div class="quickday" id="tQuickDay">
+      <button type="button" data-day="0">Hari ini</button>
+      <button type="button" data-day="1">Besok</button>
+      <button type="button" data-day="7">Pekan depan</button>
+      <button type="button" data-day="x">Hapus</button>
+    </div>
+    <div class="rows">
+      <div class="row"><span>Tanggal</span><input id="tDate" type="date" aria-label="Tanggal tenggat"></div>
+      <div class="row"><span>Jam</span><input id="tTime" type="time" aria-label="Jam tenggat"></div>
+      <div class="row"><span>Ulangi</span>
+        <select id="tRepeat" aria-label="Pengulangan">
+          <option value="">Tidak</option>
+          <option value="day:1">Tiap hari</option>
+          <option value="wd:1,2,3,4,5">Tiap hari kerja</option>
+          <option value="week:1">Tiap minggu</option>
+          <option value="month:1">Tiap bulan</option>
+          <option value="year:1">Tiap tahun</option>
+        </select>
+      </div>
+    </div>
+
+    <p class="label">Prioritas</p>
+    <div class="segs" id="tPrio">
+      <button type="button" data-p="1">P1</button>
+      <button type="button" data-p="2">P2</button>
+      <button type="button" data-p="3">P3</button>
+      <button type="button" data-p="0">Biasa</button>
+    </div>
+
+    <p class="label">Tempat &amp; tanda</p>
+    <div class="rows">
+      <div class="row"><span>Proyek</span><select id="tProject" aria-label="Proyek"></select></div>
+      <div class="row"><span>Label</span><input id="tLabels" type="text" placeholder="rumah, wa" aria-label="Label, pisah pakai koma"></div>
+    </div>
+
+    <p class="label">Langkah <em id="subCount"></em></p>
+    <div class="subs" id="tSubs"></div>
+    <form class="subadd" id="subForm">
+      <input id="subInput" type="text" placeholder="tambah langkah kecil..." autocomplete="off" aria-label="Langkah baru">
+      <button class="ghost ghost--s" type="submit">Tambah</button>
+    </form>
+  </div>
+  <div class="sheet__foot">
+    <button class="danger" id="tDelete" type="button" hidden>Hapus</button>
+    <span class="spacer"></span>
+    <button class="ghost" data-close type="button">Batal</button>
+    <button class="primary" id="tSave" type="button">Simpan</button>
+  </div>
+</section>
+
+<!-- ============ SHEET: FOKUS ============ -->
+<section class="sheet sheet--mid" id="sheetFocus" hidden aria-labelledby="focusTitle">
+  <div class="sheet__grab" aria-hidden="true"></div>
+  <div class="sheet__head">
+    <h2 id="focusTitle">Fokus</h2>
+    <button class="iconbtn" data-close type="button" aria-label="Tutup">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="sheet__body sheet__body--mid">
+    <p class="eyebrow" id="focusTask">belum ada tugas dipilih</p>
+
+    <div class="clock" id="clock" role="timer" aria-live="off"></div>
+    <span class="sr-only" id="clockSr" aria-live="polite"></span>
+
+    <div class="ticks" id="ticks" aria-hidden="true"></div>
+    <p class="phase" id="focusPhase">kerja</p>
+
+    <div class="controls">
+      <button class="ghost" id="focusReset" type="button">Ulang</button>
+      <button class="primary primary--lg" id="focusToggle" type="button">Mulai</button>
+      <button class="ghost" id="focusSkip" type="button">Lewati</button>
+    </div>
+
+    <div class="segs segs--wide" id="focusLen">
+      <button type="button" data-min="5">5m</button>
+      <button type="button" data-min="15">15m</button>
+      <button type="button" data-min="25">25m</button>
+      <button type="button" data-min="50">50m</button>
+    </div>
+    <p class="note center"><b id="focusDone">0</b> sesi hari ini &middot; <b id="focusMin">0</b> menit kekumpul</p>
+  </div>
+</section>
+
+<!-- ============ SHEET: STATISTIK ============ -->
+<section class="sheet" id="sheetStats" hidden aria-labelledby="statsTitle">
+  <div class="sheet__grab" aria-hidden="true"></div>
+  <div class="sheet__head">
+    <h2 id="statsTitle">Statistik</h2>
+    <button class="iconbtn" data-close type="button" aria-label="Tutup">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="sheet__body" id="statsBody"></div>
+</section>
+
+<!-- ============ SHEET: SETELAN ============ -->
+<section class="sheet" id="sheetSet" hidden aria-labelledby="setTitle">
+  <div class="sheet__grab" aria-hidden="true"></div>
+  <div class="sheet__head">
+    <h2 id="setTitle">Setelan</h2>
+    <button class="iconbtn" data-close type="button" aria-label="Tutup">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="sheet__body">
+    <p class="label">Tampilan</p>
+    <div class="rows">
+      <div class="row"><span>Tema</span>
+        <span class="segs" id="setTheme">
+          <button type="button" data-theme="dark">Gelap</button>
+          <button type="button" data-theme="light">Terang</button>
+          <button type="button" data-theme="system">Sistem</button>
+        </span>
+      </div>
+      <div class="row"><span>Warna</span>
+        <span class="dabs" id="setAccent">
+          <button type="button" data-accent="lime" aria-label="Hijau stabilo"></button>
+          <button type="button" data-accent="ember" aria-label="Oranye bara"></button>
+          <button type="button" data-accent="ice" aria-label="Biru es"></button>
+          <button type="button" data-accent="bubble" aria-label="Pink bubble"></button>
+        </span>
+      </div>
+    </div>
+
+    <p class="label">Kelakuan</p>
+    <div class="rows">
+      <div class="row"><span>Getar &amp; suara pas kelar</span>
+        <button class="switch" type="button" data-toggle="fx" role="switch" aria-checked="true"><i></i></button></div>
+      <div class="row"><span>Sembunyikan yang kelar</span>
+        <button class="switch" type="button" data-toggle="hideDone" role="switch" aria-checked="false"><i></i></button></div>
+      <div class="row"><span>Ingetin pas jatuh tempo</span>
+        <button class="switch" type="button" data-toggle="notify" role="switch" aria-checked="false"><i></i></button></div>
+    </div>
+    <p class="note">Notifikasi cuma jalan selama tab ini kebuka. Kalau app ditutup total, nggak ada yang ngingetin.</p>
+
+    <p class="label">Data</p>
+    <div class="rows">
+      <div class="row"><span>Simpan cadangan</span><button class="ghost ghost--s" id="btnExport" type="button">Unduh</button></div>
+      <div class="row"><span>Pulihkan dari file</span><button class="ghost ghost--s" id="btnImport" type="button">Pilih file</button></div>
+      <div class="row"><span>Hapus semua data</span><button class="danger" id="btnWipe" type="button">Hapus</button></div>
+    </div>
+    <input id="fileInput" type="file" accept="application/json" hidden>
+    <p class="note">Semua data cuma di HP kamu. Nggak ada server, nggak ada akun, nggak ada yang ngintip.</p>
+  </div>
+</section>
+
+<script src="js/parse.js?v=3"></script>
+<script src="js/app.js?v=3"></script>
+</body>
+</html>
