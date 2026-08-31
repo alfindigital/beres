@@ -1,28 +1,35 @@
-# Dokumen internal: berisi path lokal PC, hitungan biaya, dan alasan bisnis.
-# JANGAN pernah di-commit ke repo publik.
-HANDOFF.md
+# Logs
+logs
+*.log
+npm-debug.log*
 
-# Helper dev lokal: berisi path profil Chrome di PC ini.
-tools/fix-chrome-lock.sh
+node_modules
+dist
+dist-ssr
+*.local
 
-# Folder deploy, DIGENERATE oleh tools/build-dist.js
-dist/
-
-# Sampah OS
-Thumbs.db
-desktop.ini
-.DS_Store
-._*
-
-# Wrangler (cache akun deploy lokal)
-.wrangler/
+# Environment
+.env
+.env.*
+.env.local
+!.env.example
+*.key
+*.pem
+secrets/
 
 # Editor
-.vscode/
-.idea/
-*.swp
-*~
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.sw?
 
-# Node (project ini nol dependency, ini cuma pagar)
-node_modules/
-package-lock.json
+# AI agent folders
+.agents/
+.gemini/
+.lovable/
+.cursor/
+
+# Test artifacts  
+playwright-report/
+test-results/
