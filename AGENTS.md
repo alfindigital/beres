@@ -9,9 +9,9 @@ Aturan untuk AI mana pun yang menyentuh folder ini. `HANDOFF.md` berisi konteks 
 - "Selesai" berarti sudah dijalankan dan dilihat hasilnya di browser sungguhan. Bukan asumsi.
 - Kerja lewat branch + PR (alur di `CONTRIBUTING.md`). Jangan commit `.env*`, `HANDOFF.md`, atau file lokal lain.
 
-## Rilis: naikkan 3 tempat SEKALIGUS
-`index.html` (3 query), `sw.js` (3 query), dan `CACHE = 'beres-vN'` di `sw.js`.
-Lupa satu = user terjebak versi lama. Sudah kejadian.
+## Rilis: `node tools/release.js`
+Naikkan `?v=N` di `index.html` (3 query), `sw.js` (3 query), dan `CACHE = 'beres-vN'`
+sekaligus. Lupa satu = user terjebak versi lama. Sudah kejadian, makanya pakai script.
 
 ## Deploy
 `node tools/build-dist.js` lalu deploy **folder `dist`**, jangan `.`
