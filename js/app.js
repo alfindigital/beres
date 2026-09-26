@@ -338,7 +338,7 @@ function renderHead(list){
     var d=new Date();
     sub=P.WD_NAMA[d.getDay()]+', '+d.getDate()+' '+P.MON_PENDEK[d.getMonth()];
     var sisa=list.filter(function(t){return !t.done;}).length;
-    sub+=sisa?' · '+sisa+' belum kelar':' · semua kelar';
+    sub+=sisa?' · '+sisa+' belum kelar':(list.length?' · semua kelar':'');
   }
   else if(list.length) sub=list.length+' tugas';
   $('#viewTitle').textContent=title;
@@ -1203,28 +1203,9 @@ F.remain=focusMs();
 paintFocus(true);
 renderFocusMeta();
 
-if(!localStorage.getItem(KEY)){ seed(); saveNow(); }
-
-/* Benih contoh. Dibuat langsung, TIDAK lewat addTask(), karena teks contoh
- * mengandung kata kunci ("besok jam 9 #keuangan") yang kalau diparse justru
- * memotong judulnya dan bikin proyek liar. */
-function seed(){
-  var td=today(), bsk=P.ymd(P.addDays(new Date(),1));
-  function mk(o){
-    return {id:'t-'+uid(),title:o.title,note:o.note||'',due:o.due||null,time:o.time||null,
-      priority:o.p||0,project:null,labels:o.labels||[],repeat:o.repeat||null,
-      subs:o.subs||[],done:false,doneAt:null,created:Date.now(),ord:S.seq++};
-  }
-  S.tasks=[
-    mk({title:'Ketik kalimat biasa, tanggalnya kebaca sendiri',
-        note:'Contoh: bayar kos besok jam 9 !p1 #keuangan',due:td}),
-    mk({title:'Geser kartu ke kanan buat nandain kelar',due:td,labels:['tips']}),
-    mk({title:'Geser ke kiri buat hapus',due:td,labels:['tips']}),
-    mk({title:'Minum air',due:td,repeat:{unit:'day',interval:1,wd:null}}),
-    mk({title:'Rapiin kamar',due:bsk,p:3,
-        subs:[{t:'Beresin meja',done:false},{t:'Ganti sprei',done:false}]})
-  ];
-}
+/* Nggak ada tugas contoh: akun baru mulai bersih, empty state + tombol
+ * "coba: ..." yang ngajarin cara pakai tanpa nambahin sampah di data. */
+if(!localStorage.getItem(KEY)) saveNow();
 render();
 document.body.classList.add('ready');
 checkMissed();

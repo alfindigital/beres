@@ -267,6 +267,7 @@ h1,h2,.brand__word,.clock,.stat b{
 
 /* ============ DAFTAR ============ */
 .list{flex:1;padding:14px 24px calc(120px + var(--sb));display:flex;flex-direction:column}
+.list:empty{flex:none;padding:0}
 .grp{display:flex;align-items:center;gap:12px;margin:20px 0 8px}
 .grp:first-child{margin-top:0}
 .grp h2{font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
@@ -343,8 +344,8 @@ h1,h2,.brand__word,.clock,.stat b{
 .row-wrap.out{animation:out .24s var(--e) forwards}
 @keyframes out{to{opacity:0;transform:translateX(16px);max-height:0;margin-bottom:0}}
 
-.kosong{display:flex;flex-direction:column;align-items:center;gap:8px;
-  padding:64px 24px;text-align:center}
+.kosong{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;padding:64px 24px calc(64px + var(--sb));text-align:center}
 .kosong__m{width:56px;height:56px;border-radius:var(--r-m);background:var(--surf);
   border:1px solid var(--line);display:grid;place-items:center;color:var(--ink3);
   margin-bottom:6px}
@@ -557,7 +558,8 @@ select{appearance:none;padding-right:32px;
   font-variant-numeric:tabular-nums;font-weight:600}
 
 /* ============ MOBILE ============ */
-@media (max-width:860px){
+/* 1100px: tablet + landscape + jendela sempit ikut layout HP (drawer, FAB, tabs bawah) */
+@media (max-width:1100px){
   body{font-size:16px}
   input,select,textarea{font-size:16px} /* iOS nggak auto-zoom di >=16px */
   .cb{position:relative}
@@ -603,7 +605,7 @@ select{appearance:none;padding-right:32px;
   .quick,.find{margin-left:auto;margin-right:auto}
 }
 /* layar tinggi: jangan biarkan isi terapung di ruang kosong */
-@media (min-height:980px) and (min-width:861px){
+@media (min-height:980px) and (min-width:1101px){
   .list{padding-bottom:200px}
 }
 @media (prefers-reduced-motion:reduce){
