@@ -566,7 +566,7 @@ select{appearance:none;padding-right:32px;
   .cb::before{content:'';position:absolute;inset:-10px} /* area sentuh ~42px */
   .sheet__grab{cursor:grab}
   .only-mobile{display:grid}
-  .rak{width:min(84vw,300px);transform:translateX(-102%);
+  .rak{width:min(84vw,300px);transform:translateX(-102%);z-index:75;
     transition:transform .26s var(--e);box-shadow:var(--shadow)}
   .rak.open{transform:none}
   .app{margin-left:0}
