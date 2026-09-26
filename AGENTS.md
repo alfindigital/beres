@@ -1,13 +1,13 @@
 # AGENTS.md - beres.
 
-Aturan untuk AI mana pun yang menyentuh folder ini. Baca `HANDOFF.md` untuk konteks penuh.
+Aturan untuk AI mana pun yang menyentuh folder ini. `HANDOFF.md` berisi konteks penuh tapi sengaja tidak ikut ke repo publik (dokumen internal author).
 
 ## Wajib
 - Bahasa Indonesia casual, suara "aku". **Jangan pakai em dash.**
 - Vanilla HTML/CSS/JS. **Nol dependency, nol build step, nol framework.** Jangan tambahkan npm install.
 - Sebelum bilang selesai: `node test-parse.js` harus **82 lolos, 0 gagal**, dan konsol browser nol error.
 - "Selesai" berarti sudah dijalankan dan dilihat hasilnya di browser sungguhan. Bukan asumsi.
-- Bukan git. Jangan `git init`, jangan bikin branch.
+- Kerja lewat branch + PR (alur di `CONTRIBUTING.md`). Jangan commit `.env*`, `HANDOFF.md`, atau file lokal lain.
 
 ## Rilis: naikkan 3 tempat SEKALIGUS
 `index.html` (3 query), `sw.js` (3 query), dan `CACHE = 'beres-vN'` di `sw.js`.
