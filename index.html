@@ -25,7 +25,7 @@
 <meta property="og:type" content="website">
 
 <link rel="preload" href="fonts/instrument-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=6">
 </head>
 <body>
 
@@ -72,6 +72,12 @@
       </button>
     </p>
     <nav class="nav" id="navProject"></nav>
+    <form class="projadd" id="projAdd" hidden>
+      <input id="projName" type="text" maxlength="28" placeholder="nama proyek..." aria-label="Nama proyek baru" autocomplete="off">
+      <button class="iconbtn iconbtn--s" type="submit" aria-label="Buat proyek">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5 11-11"/></svg>
+      </button>
+    </form>
   </div>
 
   <div class="rak__sec" id="secLabel" hidden>
@@ -235,7 +241,7 @@
     </button>
   </div>
   <div class="sheet__body sheet__body--mid">
-    <p class="eyebrow" id="focusTask">belum ada tugas dipilih</p>
+    <div class="foc-task" id="focusTask"></div>
 
     <div class="clock" id="clock" role="timer" aria-live="off"></div>
     <span class="sr-only" id="clockSr" aria-live="polite"></span>
@@ -244,9 +250,15 @@
     <p class="phase" id="focusPhase">kerja</p>
 
     <div class="controls">
-      <button class="ghost" id="focusReset" type="button">Ulang</button>
+      <button class="ghost ghost--ctl" id="focusReset" type="button" aria-label="Ulang dari awal">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 111.4 6.2M4 10V4.5M4 10h5.5"/></svg>
+        <span>Ulang</span>
+      </button>
       <button class="primary primary--lg" id="focusToggle" type="button">Mulai</button>
-      <button class="ghost" id="focusSkip" type="button">Lewati</button>
+      <button class="ghost ghost--ctl" id="focusSkip" type="button" aria-label="Lompat ke fase berikut">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l7 6-7 6M14 6l7 6-7 6"/></svg>
+        <span>Lewati</span>
+      </button>
     </div>
 
     <div class="segs segs--wide" id="focusLen">
@@ -322,7 +334,7 @@
   </div>
 </section>
 
-<script src="js/parse.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/parse.js?v=6"></script>
+<script src="js/app.js?v=6"></script>
 </body>
 </html>
