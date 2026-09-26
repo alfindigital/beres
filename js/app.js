@@ -716,6 +716,36 @@ elList.addEventListener('click',function(e){
   });
 })();
 
+/* sheet bisa ditarik ke bawah buat nutup — gestur aplikasi native.
+ * Mulai dari grab handle atau area kosong sheet__head; kartu ikut jari,
+ * lepas >80px atau geseran cepat ke bawah = tutup. */
+(function(){
+  var sheet=null,sy=0,dy=0,v0=0,vy=0,t0=0;
+  document.addEventListener('touchstart',function(e){
+    if(!openSheets.length) return;
+    var g=e.target.closest('.sheet__grab,.sheet__head'); if(!g) return;
+    if(e.target.closest('button')) return;
+    sheet=g.closest('.sheet'); if(!sheet||sheet.hidden) return;
+    sy=e.touches[0].clientY; dy=0; v0=0; vy=0; t0=e.timeStamp;
+  },{passive:true});
+  document.addEventListener('touchmove',function(e){
+    if(!sheet) return;
+    var y=e.touches[0].clientY;
+    dy=Math.max(0,y-sy);
+    var dt=e.timeStamp-t0;
+    if(dt>40){ vy=(y-v0)/dt*16; v0=y; t0=e.timeStamp; }
+    sheet.style.transition='none';
+    sheet.style.transform='translate(-50%,'+dy+'px)';
+  },{passive:true});
+  document.addEventListener('touchend',function(){
+    if(!sheet) return;
+    var s=sheet, d=dy, f=vy;
+    sheet=null;
+    s.style.transition=''; s.style.transform='';
+    if(d>80||f>.6&&d>24) closeSheet(s);
+  });
+})();
+
 /* drag reorder (desktop) */
 elList.addEventListener('dragstart',function(e){
   var g=e.target.closest('[data-act="grip"]'); if(!g){ e.preventDefault(); return; }

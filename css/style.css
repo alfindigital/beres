@@ -87,7 +87,7 @@
 }
 
 *,*::before,*::after{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+html{touch-action:manipulation;overscroll-behavior:none;-webkit-text-size-adjust:100%}
 body{
   margin:0;background:var(--bg);color:var(--ink);
   font-family:var(--font);font-size:15.5px;line-height:1.5;
@@ -106,8 +106,6 @@ svg{width:20px;height:20px;display:block;fill:none;stroke:currentColor;
 :focus:not(:focus-visible){outline:none}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .spacer{flex:1}
-.only-mobile{display:none}
-
 /* judul pakai axis wdth: dipadatkan, ini yang nggak bisa ditiru font sistem */
 h1,h2,.brand__word,.clock,.stat b{
   font-variation-settings:'wdth' 82;
@@ -120,7 +118,7 @@ h1,h2,.brand__word,.clock,.stat b{
   display:flex;flex-direction:column;gap:22px;
   padding:calc(20px + var(--st)) 14px 14px;
   background:var(--bg2);border-right:1px solid var(--line);
-  overflow-y:auto;
+  overflow-y:auto;overscroll-behavior:contain;
 }
 .rak__top{display:flex;align-items:center}
 .brand{display:flex;align-items:baseline;gap:3px;margin-right:auto;padding-left:6px}
@@ -181,6 +179,9 @@ h1,h2,.brand__word,.clock,.stat b{
 .iconbtn:active{transform:scale(.93)}
 .iconbtn--s{width:30px;height:30px}
 .iconbtn--s svg{width:17px;height:17px}
+
+/* harus SETELAH .iconbtn biar display:none menang di desktop */
+.only-mobile{display:none}
 
 .primary,.ghost,.danger{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
@@ -414,7 +415,7 @@ h1,h2,.brand__word,.clock,.stat b{
 .sheet__head{display:flex;align-items:center;gap:8px;padding:10px 10px 10px 24px;flex:none}
 .sheet__head h2{font-size:19px;margin-right:auto}
 .sheet__body{padding:0 24px 22px;overflow-y:auto;display:flex;flex-direction:column;
-  gap:12px;-webkit-overflow-scrolling:touch}
+  gap:12px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .sheet__body--mid{align-items:center;text-align:center;gap:16px;padding-bottom:30px}
 .sheet__foot{display:flex;align-items:center;gap:8px;flex:none;
   padding:12px 24px 20px;border-top:1px solid var(--line);background:var(--bg2)}
@@ -558,6 +559,10 @@ select{appearance:none;padding-right:32px;
 /* ============ MOBILE ============ */
 @media (max-width:860px){
   body{font-size:16px}
+  input,select,textarea{font-size:16px} /* iOS nggak auto-zoom di >=16px */
+  .cb{position:relative}
+  .cb::before{content:'';position:absolute;inset:-10px} /* area sentuh ~42px */
+  .sheet__grab{cursor:grab}
   .only-mobile{display:grid}
   .rak{width:min(84vw,300px);transform:translateX(-102%);
     transition:transform .26s var(--e);box-shadow:var(--shadow)}
