@@ -1,10 +1,10 @@
-const CACHE = 'beres-v3';
+const CACHE = 'beres-v4';
 const ASSETS = [
   './',
   'index.html',
-  'css/style.css?v=3',
-  'js/parse.js?v=3',
-  'js/app.js?v=3',
+  'css/style.css?v=4',
+  'js/parse.js?v=4',
+  'js/app.js?v=4',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'fonts/instrument-sans-latin.woff2',

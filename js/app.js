@@ -47,32 +47,71 @@ function blank(){
     seq:0
   };
 }
-function load(){
-  try{
-    var raw=localStorage.getItem(KEY);
-    if(!raw) return blank();
-    var d=JSON.parse(raw), b=blank();
-    // JSON valid belum berarti berbentuk state. '"teks"', '12345', '[1,2]' semua
-    // lolos JSON.parse; kalau diteruskan, S.tasks jadi undefined dan app blank
-    // total (user kehilangan akses ke semua tugasnya). Tolak yang bukan objek.
-    if(typeof d!=='object'||d===null||Array.isArray(d)) return blank();
-    d.tasks=Array.isArray(d.tasks)?d.tasks:[];
-    d.projects=Array.isArray(d.projects)&&d.projects.length?d.projects:b.projects;
-    d.sessions=Array.isArray(d.sessions)?d.sessions:[];
-    d.set=Object.assign(b.set,d.set||{});
-    d.seq=+d.seq||0;
-    return d;
-  }catch(e){ return blank(); }
+var BAK=KEY+'-bak';
+function cleanTask(t){
+  if(!t||typeof t!=='object'||typeof t.title!=='string'||!t.title.trim()) return null;
+  return {
+    id:typeof t.id==='string'?t.id:'t-'+uid(),
+    title:t.title.slice(0,300),
+    note:typeof t.note==='string'?t.note:'',
+    due:typeof t.due==='string'&&P.parseISO(t.due)?t.due:null,
+    time:/^\d{2}:\d{2}$/.test(t.time||'')?t.time:null,
+    priority:+t.priority>=1&&+t.priority<=4?+t.priority:0,
+    project:typeof t.project==='string'?t.project:null,
+    labels:(Array.isArray(t.labels)?t.labels:[])
+      .filter(function(l){ return typeof l==='string'; }).slice(0,20),
+    repeat:t.repeat&&typeof t.repeat==='object'&&t.repeat.unit?t.repeat:null,
+    subs:(Array.isArray(t.subs)?t.subs:[])
+      .filter(function(s){ return s&&typeof s.t==='string'; })
+      .map(function(s){ return {t:s.t.slice(0,300),done:!!s.done}; }),
+    done:!!t.done, doneAt:+t.doneAt||null,
+    created:+t.created||Date.now(), ord:+t.ord||0
+  };
 }
-var saveT=null;
+// JSON valid belum berarti berbentuk state. '"teks"', '12345', '[1,2]' semua
+// lolos JSON.parse; kalau diteruskan, S.tasks jadi undefined dan app blank
+// total (user kehilangan akses ke semua tugasnya). Tolak yang bukan objek,
+// dan saring entri tugas yang rusak. Dipakai juga saat impor file.
+function norm(d){
+  if(typeof d!=='object'||d===null||Array.isArray(d)) return null;
+  var b=blank();
+  d.tasks=(Array.isArray(d.tasks)?d.tasks:[]).map(cleanTask).filter(Boolean);
+  d.projects=(Array.isArray(d.projects)?d.projects:[])
+    .filter(function(p){ return p&&typeof p.id==='string'&&typeof p.name==='string'; });
+  if(!d.projects.length) d.projects=b.projects;
+  d.sessions=(Array.isArray(d.sessions)?d.sessions:[])
+    .filter(function(s){ return s&&typeof s.d==='string'; });
+  d.set=Object.assign(b.set,d.set||{});
+  d.seq=+d.seq||0;
+  return d;
+}
+function load(){
+  var raw=localStorage.getItem(KEY), d=null;
+  if(raw) try{ d=norm(JSON.parse(raw)); }catch(e){}
+  if(d) return d;
+  /* state utama korup atau hilang: coba cadangan rolling */
+  try{
+    var bak=localStorage.getItem(BAK);
+    if(bak){ d=norm(JSON.parse(bak)); if(d) return d; }
+  }catch(e){}
+  return blank();
+}
+var saveT=null, saveWarned=false;
+function trySave(){
+  var str=JSON.stringify(S);
+  try{
+    localStorage.setItem(KEY,str);
+    saveWarned=false;
+  }catch(e){
+    if(!saveWarned){ saveWarned=true; toast('Penyimpanan penuh, cadangkan lalu hapus yang lama'); }
+  }
+  try{ localStorage.setItem(BAK,str); }catch(e){}
+}
 function save(){
   clearTimeout(saveT);
-  saveT=setTimeout(function(){
-    try{ localStorage.setItem(KEY,JSON.stringify(S)); }
-    catch(e){ toast('Penyimpanan penuh, cadangkan lalu hapus yang lama'); }
-  },120);
+  saveT=setTimeout(trySave,120);
 }
-function saveNow(){ clearTimeout(saveT); try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){} }
+function saveNow(){ clearTimeout(saveT); trySave(); }
 
 /* ================= util ================= */
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
@@ -762,6 +801,21 @@ setInterval(function(){
   });
 },20000);
 
+/* App ketutup pas jam jatuh tempo = pengingat kelewat diam-diam.
+ * Tagih sekali per sesi: toast (tanpa butuh izin) + Notification kalau granted. */
+var nudged={};
+function checkMissed(){
+  var now=nowHM(), td=today(), miss=0, first=null;
+  S.tasks.forEach(function(t){
+    if(t.done||!t.due||!t.time||nudged[t.id]) return;
+    if(t.due<td||(t.due===td&&t.time<now)){ nudged[t.id]=1; miss++; first=first||t; }
+  });
+  if(!miss) return;
+  var msg=miss===1?('Lewat jatuh tempo: '+first.title):(miss+' tugas lewat jatuh tempo');
+  toast(msg);
+  notify('beres.',msg);
+}
+
 /* ================= statistik ================= */
 function openStats(){
   var td=today(), d0=P.dayStart(new Date());
@@ -887,8 +941,12 @@ $('#fileInput').addEventListener('change',function(e){
     try{
       var d=JSON.parse(rd.result);
       if(!d||!Array.isArray(d.tasks)) throw 0;
-      S=d; saveNow(); S=load(); applySet(); render();
-      closeSheet($('#sheetSet')); toast('Data dipulihkan');
+      var want=d.tasks.length;
+      var n2=norm(d); if(!n2) throw 0;
+      S=n2; saveNow(); applySet(); render();
+      closeSheet($('#sheetSet'));
+      var drop=want-S.tasks.length;
+      toast('Data dipulihkan'+(drop?' ('+drop+' entri rusak dibuang)':''));
     }catch(err){ toast('File nggak kebaca'); }
   };
   rd.readAsText(f);
@@ -1013,10 +1071,11 @@ function seed(){
 }
 render();
 document.body.classList.add('ready');
+checkMissed();
 
 window.addEventListener('beforeunload',saveNow);
 document.addEventListener('visibilitychange',function(){
-  if(document.visibilityState==='hidden') saveNow();
+  if(document.visibilityState==='hidden') saveNow(); else checkMissed();
 });
 
 if('serviceWorker' in navigator){
