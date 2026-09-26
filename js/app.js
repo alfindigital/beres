@@ -22,7 +22,11 @@ var ICO = {
   play:'<svg viewBox="0 0 24 24"><path d="M9 6.5l9 5.5-9 5.5z"/></svg>',
   grip:'<svg viewBox="0 0 24 24"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"/></svg>',
   trash:'<svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M6.5 7l1 13h9l1-13"/></svg>',
-  find:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8L20.5 20.5"/></svg>'
+  find:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8L20.5 20.5"/></svg>',
+  tray:'<svg viewBox="0 0 24 24"><path d="M4 13l2.5-8h11L20 13v6.5H4zM4 13h5l1 2h4l1-2h5"/></svg>',
+  tag:'<svg viewBox="0 0 24 24"><path d="M4 4.5h6.7L20 13.8l-6.2 6.2L4.5 10.7zM8.5 8.5h.01"/></svg>',
+  folder:'<svg viewBox="0 0 24 24"><path d="M4 6.5h5.2l2 2.5H20V19H4z"/></svg>',
+  x:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>'
 };
 
 /* teks acak: bikin app terasa hidup dipakai berhari-hari */
@@ -341,20 +345,40 @@ function renderHead(list){
   $('#viewSub').textContent=sub;
 }
 function renderKosong(){
-  var h='',m=ICO.check,t,p;
+  var h='',m=ICO.check,t,p,hint='';
   if(q){ m=ICO.find; t='Nggak ketemu'; p='Coba kata lain, atau bikin tugas baru.'; }
   else if(view.type==='today'){
     var adaHariIni=S.tasks.some(function(x){return !x.done;});
     t=adaHariIni?pick(TXT.clearToday):pick(TXT.emptyToday);
     p=pick(TXT.subToday);
+    if(!adaHariIni) hint='coba: bayar kos besok jam 9 !p1 #keuangan';
   }
-  else if(view.type==='upcoming'){ t='Belum ada jadwal'; p='Tugas dengan tenggat di masa depan muncul di sini.'; }
-  else if(view.type==='inbox'){ t='Kotak masuk bersih'; p='Tugas tanpa tenggat nongkrong di sini.'; }
+  else if(view.type==='upcoming'){ m=ICO.cal; t='Belum ada jadwal'; p='Tugas dengan tenggat di masa depan muncul di sini.'; }
+  else if(view.type==='inbox'){ m=ICO.tray; t='Kotak masuk bersih'; p='Tugas tanpa tenggat nongkrong di sini.'; }
   else if(view.type==='done'){ t='Belum ada yang kelar'; p='Centang satu tugas, nanti kelihatan di sini.'; }
+  else if(view.type==='label'){ m=ICO.tag; t='Label kosong'; p='Belum ada tugas berlabel @'+view.id+'.'; }
+  else if(view.type==='project'){ m=ICO.folder; t='Proyek kosong';
+    var pp=proj(view.id); p='Tambah tugas ke proyek ini pakai #'+(pp?pp.name:'proyek')+' di judulnya.'; }
   else { t='Kosong'; p='Tambah tugas pakai tombol di bawah.'; }
-  h='<div class="kosong__m">'+m+'</div><h2>'+esc(t)+'</h2><p>'+esc(p)+'</p>';
+  h='<div class="kosong__m">'+m+'</div><h2>'+esc(t)+'</h2><p>'+esc(p)+'</p>'+
+    (hint?'<button class="kosong__hint" type="button" data-hint="'+esc(hint.slice(6))+'">'+esc(hint)+'</button>':'');
   elKosong.innerHTML=h;
 }
+/* contoh di empty state bisa diketuk: isi quick-add kalau kelihatan,
+ * kalau di mobile isi judul sheet supaya token pratinjaunya kelihatan */
+elKosong.addEventListener('click',function(e){
+  var b=e.target.closest('.kosong__hint'); if(!b) return;
+  var contoh=b.getAttribute('data-hint');
+  if(elQI.offsetParent!==null){
+    elQI.value=contoh;
+    elQI.dispatchEvent(new Event('input',{bubbles:true}));
+    elQI.focus();
+  }else{
+    openTask(null);
+    $('#tTitle').value=contoh;
+    $('#tTitle').dispatchEvent(new Event('input',{bubbles:true}));
+  }
+});
 function cardHTML(t){
   var td=today(), m='';
   if(t.due){
@@ -437,13 +461,31 @@ function go(type,id){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-/* ================= token pratinjau ================= */
+/* ================= token pratinjau =================
+ * Tiap chip bisa dicopot: klik x membuang teks mentah token dari input.
+ * raw diambil apa adanya dari parser, jadi yang dibuang persis yang kebaca. */
 function tokenHTML(r){
   var ic={date:ICO.cal,time:ICO.clock,repeat:ICO.rep,priority:ICO.flag,project:'',label:''};
   return (r.tokens||[]).map(function(t){
-    return '<span class="tk tk--'+t.type+'">'+(ic[t.type]||'')+esc(t.label)+'</span>';
+    return '<span class="tk tk--'+t.type+'">'+(ic[t.type]||'')+esc(t.label)+
+      '<button class="tk__x" type="button" data-raw="'+esc(t.raw)+'" aria-label="Buang '+esc(t.label)+'" tabindex="-1">'+ICO.x+'</button></span>';
   }).join('');
 }
+function stripRaw(input,raw){
+  var i=input.value.indexOf(raw);
+  if(i<0) return;
+  input.value=(input.value.slice(0,i)+input.value.slice(i+raw.length))
+    .replace(/\s{2,}/g,' ').replace(/^ /,'');
+  input.dispatchEvent(new Event('input',{bubbles:true}));
+  input.focus();
+}
+/* kedua strip token (quick add + judul di sheet) pakai handler yang sama */
+[['#quickTokens','#quickInput'],['#tTokens','#tTitle']].forEach(function(pair){
+  $(pair[0]).addEventListener('click',function(e){
+    var x=e.target.closest('.tk__x'); if(!x) return;
+    stripRaw($(pair[1]),x.getAttribute('data-raw'));
+  });
+});
 var elQuick=$('#quickForm'), elQI=$('#quickInput'), elQT=$('#quickTokens');
 elQI.addEventListener('input',function(){
   elQuick.classList.toggle('hot',!!elQI.value.trim());
@@ -474,6 +516,7 @@ function closeSheet(el){
   if(!el) return;
   el.classList.add('out');
   setTimeout(function(){
+    if(!el.classList.contains('out')) return; // sheet kebuka ulang sebelum timeout
     el.hidden=true; el.classList.remove('out');
     openSheets=openSheets.filter(function(x){return x!==el;});
     if(!openSheets.length){ $('#scrim').hidden=true; document.body.style.overflow=''; }
@@ -504,6 +547,14 @@ function openTask(id){
   $('#tRepeat').value=draft.repeat?repToVal(draft.repeat):'';
   $$('#tPrio button').forEach(function(b){
     b.classList.toggle('on',+b.getAttribute('data-p')===(draft.priority||0));
+  });
+  /* quickday: tandai tombol yang cocok sama tanggal di draft */
+  var qd={}; qd[P.ymd(new Date())]='0';
+  qd[P.ymd(P.addDays(new Date(),1))]='1';
+  qd[P.ymd(P.addDays(new Date(),7))]='7';
+  $$('#tQuickDay button').forEach(function(b){
+    var v=b.getAttribute('data-day');
+    b.classList.toggle('on',v!=='x'&&qd[draft.due]===v);
   });
   var ph='';
   S.projects.forEach(function(p){
@@ -566,6 +617,16 @@ $('#tQuickDay').addEventListener('click',function(e){
   var b=e.target.closest('button'); if(!b) return;
   var v=b.getAttribute('data-day');
   $('#tDate').value = v==='x' ? '' : P.ymd(P.addDays(new Date(),+v));
+  $$('#tQuickDay button').forEach(function(x){ x.classList.toggle('on',x===b&&v!=='x'); });
+});
+$('#tDate').addEventListener('change',function(){
+  var qd={}; qd[P.ymd(new Date())]='0';
+  qd[P.ymd(P.addDays(new Date(),1))]='1';
+  qd[P.ymd(P.addDays(new Date(),7))]='7';
+  var v=this.value;
+  $$('#tQuickDay button').forEach(function(x){
+    x.classList.toggle('on',qd[v]===x.getAttribute('data-day'));
+  });
 });
 $('#tSave').addEventListener('click',function(){
   var raw=$('#tTitle').value.trim();
@@ -606,13 +667,24 @@ elList.addEventListener('click',function(e){
   if(a==='focus'){ focusOn(id); return; }
 });
 
-/* swipe: kanan = kelar, kiri = hapus */
+/* swipe: kanan = kelar, kiri = hapus.
+ * Blok aksi di belakang kartu muncul progresif (opacity ikut jarak geser)
+ * dan "mengunci" lewat getar kecil pas lewat ambang SWIPE. */
 (function(){
-  var sx=0,sy=0,dx=0,active=null,card=null,lock=null;
+  var sx=0,sy=0,dx=0,active=null,card=null,lock=null,armed=false;
+  function reveal(){
+    if(!active) return;
+    var p=Math.min(1,Math.abs(dx)/SWIPE);
+    var ok=$('.ok',active), no=$('.no',active);
+    if(ok) ok.style.opacity=dx>0?p:0;
+    if(no) no.style.opacity=dx<0?p:0;
+    active.classList.toggle('arm',p>=1);
+  }
   elList.addEventListener('touchstart',function(e){
     if(e.touches.length!==1) return;
     var w=e.target.closest('.row-wrap'); if(!w) return;
-    active=w; card=$('.task',w); sx=e.touches[0].clientX; sy=e.touches[0].clientY; dx=0; lock=null;
+    active=w; card=$('.task',w); sx=e.touches[0].clientX; sy=e.touches[0].clientY;
+    dx=0; lock=null; armed=false;
   },{passive:true});
   elList.addEventListener('touchmove',function(e){
     if(!active) return;
@@ -624,15 +696,23 @@ elList.addEventListener('click',function(e){
     if(lock!=='x'){ active=null; return; }
     dx=x; card.style.transform='translateX('+dx+'px)';
     card.style.transition='none';
+    var nowArmed=Math.abs(dx)>=SWIPE;
+    if(nowArmed&&!armed) buzz(6);
+    armed=nowArmed;
+    reveal();
   },{passive:true});
   elList.addEventListener('touchend',function(){
     if(!active||!card) { active=null; return; }
     var id=active.getAttribute('data-id');
     card.style.transition='';
+    var ok=$('.ok',active), no=$('.no',active);
+    if(ok) ok.style.opacity='';
+    if(no) no.style.opacity='';
+    active.classList.remove('arm');
     if(dx>SWIPE){ card.style.transform=''; toggle(id); }
     else if(dx<-SWIPE){ card.style.transform=''; removeTask(id); }
     else card.style.transform='';
-    active=null; card=null; dx=0;
+    active=null; card=null; dx=0; armed=false;
   });
 })();
 
@@ -675,7 +755,7 @@ elList.addEventListener('drop',function(e){
  * Alasan: setInterval tidak pernah tepat 1000ms (drift menumpuk), dan tab background
  * di-throttle jadi ~1x/menit sehingga sesi 25 menit bisa jadi 40 menit nyata.
  */
-var F={running:false,endAt:0,remain:0,phase:'work',taskId:null,raf:0,lastSec:-1};
+var F={running:false,endAt:0,remain:0,phase:'work',taskId:null,raf:0,lastSec:-1,idle:''};
 function focusMs(){ return (S.set.focusMin||25)*60000; }
 function restMs(){ return 5*60000; }
 function focusRemain(){
@@ -685,6 +765,7 @@ function focusRemain(){
 function focusOn(id){
   F.taskId=id||null;
   if(!F.running){ F.phase='work'; F.remain=focusMs(); }
+  F.idle=pick(TXT.focusIdle);
   paintFocus(true);
   openSheet($('#sheetFocus'));
 }
@@ -765,7 +846,16 @@ function paintFocus(force){
   var on=Math.ceil(frac*n);
   for(var i=0;i<n;i++) ticks[i].classList.toggle('on',i<on);
   var t=F.taskId?byId(F.taskId):null;
-  $('#focusTask').textContent=t?t.title:pick(TXT.focusIdle);
+  var ft=$('#focusTask');
+  if(t){
+    var p=proj(t.project);
+    ft.classList.remove('dim');
+    ft.innerHTML=(p?'<i class="dab" style="background:'+esc(p.color)+'"></i>':'')+
+      '<span>'+esc(t.title)+'</span>';
+  }else{
+    ft.classList.add('dim');
+    ft.textContent=F.idle||pick(TXT.focusIdle);
+  }
 }
 function renderFocusMeta(){
   var td=today();
@@ -842,9 +932,10 @@ function openStats(){
     if(n>max) max=n;
   }
   vals.forEach(function(v){
-    bars+='<div class="chart__c'+(v.n?' has':'')+(v.now?' now':'')+'">'+
-      '<i style="height:'+Math.round(v.n/max*76+3)+'px"></i>'+
-      '<u>'+P.WD_PENDEK[v.d.getDay()][0]+'</u></div>';
+    bars+='<div class="day'+(v.n?' has':'')+(v.now?' now':'')+'">'+
+      '<u>'+P.WD_PENDEK[v.d.getDay()]+'</u>'+
+      '<i class="trk"><i style="width:'+Math.round(v.n/max*100)+'%"></i></i>'+
+      '<b>'+v.n+'</b></div>';
   });
 
   var byP={};
@@ -860,20 +951,29 @@ function openStats(){
       '<b>'+byP[k]+'</b></div>';
   }).join('');
 
+  /* streak terpanjang sepanjang pemakaian: run terpanjang dari hari-hari
+   * yang punya minimal 1 tugas kelar */
+  var days=Object.keys(set).sort(), best=0, cur=0, prev='';
+  days.forEach(function(k){
+    cur=(prev&&P.diffDays(P.parseISO(k),P.parseISO(prev))===1)?cur+1:1;
+    if(cur>best) best=cur;
+    prev=k;
+  });
+
   var fs=S.sessions.filter(function(x){return x.d===td;});
   var fmin=fs.reduce(function(a,b){return a+(b.min||0);},0);
 
   $('#statsBody').innerHTML=
     '<div class="stat3">'+
       '<div class="stat stat--hero"><b>'+doneToday+'</b><small>kelar hari ini</small></div>'+
-      '<div class="stat"><b>'+streak+'</b><small>hari beruntun</small></div>'+
+      '<div class="stat"><b>'+streak+'</b><small>hari beruntun'+(best>streak?' · terpanjang '+best:'')+'</small></div>'+
     '</div>'+
     '<div class="stat3">'+
       '<div class="stat"><b>'+open+'</b><small>belum kelar</small></div>'+
       '<div class="stat"><b>'+late+'</b><small>kelewat</small></div>'+
       '<div class="stat"><b>'+fmin+'m</b><small>fokus hari ini</small></div>'+
     '</div>'+
-    '<p class="label">7 hari terakhir</p><div class="chart">'+bars+'</div>'+
+    '<p class="label">7 hari terakhir</p><div class="brk">'+bars+'</div>'+
     (rows?'<p class="label">Sisa per proyek</p><div class="brk">'+rows+'</div>':'')+
     '<p class="note">Total '+done.length+' tugas kelar sejak pakai beres.</p>';
   openSheet($('#sheetStats'));
@@ -952,19 +1052,45 @@ $('#fileInput').addEventListener('change',function(e){
   rd.readAsText(f);
   e.target.value='';
 });
+/* dua ketukan: ketuk pertama mengangkat tombol jadi "Yakin?", ketuk kedua
+ * mengeksekusi. Nol dialog native. */
+var wipeArm=null;
 $('#btnWipe').addEventListener('click',function(){
-  if(!confirm('Hapus SEMUA tugas dan setelan? Nggak bisa dibalikin.')) return;
-  localStorage.removeItem(KEY);
+  var b=this;
+  if(!wipeArm){
+    b.textContent='Yakin?'; b.classList.add('arm');
+    wipeArm=setTimeout(function(){ wipeArm=null; b.textContent='Hapus'; b.classList.remove('arm'); },2600);
+    return;
+  }
+  clearTimeout(wipeArm); wipeArm=null;
+  b.textContent='Hapus'; b.classList.remove('arm');
+  localStorage.removeItem(KEY); localStorage.removeItem(BAK);
   S=blank(); saveNow(); applySet(); render();
   closeSheet($('#sheetSet')); toast('Semua data dihapus');
 });
 
-/* ================= proyek ================= */
+/* ================= proyek =================
+ * Form inline di rak, bukan prompt() native yang jadul di iOS. */
+var elProjAdd=$('#projAdd'), elProjName=$('#projName');
 $('#btnAddProject').addEventListener('click',function(){
-  var n=prompt('Nama proyek baru:');
-  if(!n||!n.trim()) return;
-  var p={id:'p-'+uid(),name:n.trim().slice(0,28),color:PAL[S.projects.length%PAL.length]};
-  S.projects.push(p); save(); go('project',p.id);
+  elProjAdd.hidden=false;
+  elProjName.value='';
+  elProjName.focus();
+});
+elProjAdd.addEventListener('submit',function(e){
+  e.preventDefault();
+  var n=elProjName.value.trim();
+  if(!n) return;
+  var p={id:'p-'+uid(),name:n.slice(0,28),color:PAL[S.projects.length%PAL.length]};
+  S.projects.push(p); save();
+  elProjAdd.hidden=true;
+  go('project',p.id);
+});
+elProjName.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){ e.stopPropagation(); elProjAdd.hidden=true; }
+});
+elProjName.addEventListener('blur',function(){
+  setTimeout(function(){ if(!elProjName.value.trim()) elProjAdd.hidden=true; },140);
 });
 $('#navProject').addEventListener('click',function(e){
   var b=e.target.closest('[data-project]'); if(!b) return;
