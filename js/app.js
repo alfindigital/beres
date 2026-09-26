@@ -181,18 +181,22 @@ function sparks(x,y){
 }
 
 /* ================= CRUD ================= */
+function projByName(name){
+  for(var i=0;i<S.projects.length;i++)
+    if(S.projects[i].name.toLowerCase()===name.toLowerCase()) return S.projects[i];
+  return null;
+}
+function ensureProj(name){
+  var f=projByName(name);
+  if(!f){ f={id:'p-'+uid(),name:name,color:PAL[S.projects.length%PAL.length]}; S.projects.push(f); }
+  return f;
+}
 function addTask(text,opt){
   opt=opt||{};
   var r=P.parse(text);
   if(!r.title && !opt.allowEmpty) return null;
   var pid=opt.project||null;
-  if(r.project){
-    var f=null;
-    for(var i=0;i<S.projects.length;i++)
-      if(S.projects[i].name.toLowerCase()===r.project.toLowerCase()) f=S.projects[i];
-    if(!f){ f={id:'p-'+uid(),name:r.project,color:PAL[S.projects.length%PAL.length]}; S.projects.push(f); }
-    pid=f.id;
-  }
+  if(r.project) pid=ensureProj(r.project).id;
   var t={
     id:'t-'+uid(), title:r.title||text.trim(), note:'',
     due:r.due||opt.due||null, time:r.time||null, priority:r.priority||0,
@@ -338,7 +342,7 @@ function renderHead(list){
     var d=new Date();
     sub=P.WD_NAMA[d.getDay()]+', '+d.getDate()+' '+P.MON_PENDEK[d.getMonth()];
     var sisa=list.filter(function(t){return !t.done;}).length;
-    sub+=sisa?' · '+sisa+' belum kelar':' · semua kelar';
+    sub+=sisa?' · '+sisa+' belum kelar':(list.length?' · semua kelar':'');
   }
   else if(list.length) sub=list.length+' tugas';
   $('#viewTitle').textContent=title;
@@ -374,9 +378,7 @@ elKosong.addEventListener('click',function(e){
     elQI.dispatchEvent(new Event('input',{bubbles:true}));
     elQI.focus();
   }else{
-    openTask(null);
-    $('#tTitle').value=contoh;
-    $('#tTitle').dispatchEvent(new Event('input',{bubbles:true}));
+    openTask(null,contoh);
   }
 });
 function cardHTML(t){
@@ -530,13 +532,28 @@ document.addEventListener('click',function(e){
 
 /* ---- sheet tugas ---- */
 var draft=null;
-function openTask(id){
+function openTask(id,raw){
   var t=id?byId(id):null;
   editing=id||null;
   draft=t?JSON.parse(JSON.stringify(t)):{
     id:null,title:'',note:'',due:view.type==='today'?today():null,time:null,priority:0,
-    project:view.type==='project'?view.id:null,labels:[],repeat:null,subs:[],done:false
+    project:view.type==='project'?view.id:null,labels:[],repeat:null,subs:[],done:false,newProj:null
   };
+  /* teks mentah (contoh quick-add): isian sheet diisi dari hasil parse
+   * supaya janji chip di judul konsisten dengan yang tersimpan */
+  if(raw&&!t){
+    var rp=P.parse(raw);
+    draft.title=raw;
+    if(rp.due) draft.due=rp.due;
+    if(rp.time) draft.time=rp.time;
+    if(rp.priority) draft.priority=rp.priority;
+    if(rp.labels&&rp.labels.length) draft.labels=rp.labels.slice();
+    if(rp.repeat) draft.repeat=rp.repeat;
+    if(rp.project){
+      var fp=projByName(rp.project);
+      if(fp) draft.project=fp.id; else draft.newProj=rp.project;
+    }
+  }
   $('#taskTitle').textContent=t?'Ubah tugas':'Tugas baru';
   $('#tDelete').hidden=!t;
   $('#tTitle').value=draft.title;
@@ -560,8 +577,10 @@ function openTask(id){
   S.projects.forEach(function(p){
     ph+='<option value="'+esc(p.id)+'"'+(draft.project===p.id?' selected':'')+'>'+esc(p.name)+'</option>';
   });
+  /* proyek dari parse yang belum ada dibuat pas Simpan, bukan waktu sheet kebuka */
+  if(draft.newProj) ph+='<option value="__new" selected>'+esc(draft.newProj)+' (baru)</option>';
   $('#tProject').innerHTML='<option value="">Tanpa proyek</option>'+ph;
-  $('#tTokens').innerHTML='';
+  $('#tTokens').innerHTML=draft.title?tokenHTML(P.parse(draft.title)):'';
   renderSubs();
   openSheet($('#sheetTask'));
   if(!t) setTimeout(function(){ $('#tTitle').focus(); },260);
@@ -641,7 +660,8 @@ $('#tSave').addEventListener('click',function(){
   t.due=$('#tDate').value||r.due||null;
   t.time=$('#tTime').value||r.time||null;
   t.priority=draft.priority||r.priority||0;
-  t.project=$('#tProject').value||null;
+  var pv=$('#tProject').value;
+  t.project=pv==='__new'?(draft.newProj?ensureProj(draft.newProj).id:null):(pv||null);
   var lb=$('#tLabels').value.split(',').map(function(s){return s.trim();}).filter(Boolean);
   t.labels=lb.length?lb:(r.labels||[]);
   t.repeat=valToRep($('#tRepeat').value)||r.repeat||null;
@@ -714,6 +734,15 @@ elList.addEventListener('click',function(e){
     else card.style.transform='';
     active=null; card=null; dx=0; armed=false;
   });
+  elList.addEventListener('touchcancel',function(){
+    if(!active||!card) { active=null; return; }
+    card.style.transition=''; card.style.transform='';
+    var ok=$('.ok',active), no=$('.no',active);
+    if(ok) ok.style.opacity='';
+    if(no) no.style.opacity='';
+    active.classList.remove('arm');
+    active=null; card=null; dx=0; armed=false;
+  });
 })();
 
 /* sheet bisa ditarik ke bawah buat nutup — gestur aplikasi native.
@@ -743,6 +772,11 @@ elList.addEventListener('click',function(e){
     sheet=null;
     s.style.transition=''; s.style.transform='';
     if(d>80||f>.6&&d>24) closeSheet(s);
+  });
+  document.addEventListener('touchcancel',function(){
+    if(!sheet) return;
+    sheet.style.transition=''; sheet.style.transform='';
+    sheet=null;
   });
 })();
 
@@ -1203,28 +1237,9 @@ F.remain=focusMs();
 paintFocus(true);
 renderFocusMeta();
 
-if(!localStorage.getItem(KEY)){ seed(); saveNow(); }
-
-/* Benih contoh. Dibuat langsung, TIDAK lewat addTask(), karena teks contoh
- * mengandung kata kunci ("besok jam 9 #keuangan") yang kalau diparse justru
- * memotong judulnya dan bikin proyek liar. */
-function seed(){
-  var td=today(), bsk=P.ymd(P.addDays(new Date(),1));
-  function mk(o){
-    return {id:'t-'+uid(),title:o.title,note:o.note||'',due:o.due||null,time:o.time||null,
-      priority:o.p||0,project:null,labels:o.labels||[],repeat:o.repeat||null,
-      subs:o.subs||[],done:false,doneAt:null,created:Date.now(),ord:S.seq++};
-  }
-  S.tasks=[
-    mk({title:'Ketik kalimat biasa, tanggalnya kebaca sendiri',
-        note:'Contoh: bayar kos besok jam 9 !p1 #keuangan',due:td}),
-    mk({title:'Geser kartu ke kanan buat nandain kelar',due:td,labels:['tips']}),
-    mk({title:'Geser ke kiri buat hapus',due:td,labels:['tips']}),
-    mk({title:'Minum air',due:td,repeat:{unit:'day',interval:1,wd:null}}),
-    mk({title:'Rapiin kamar',due:bsk,p:3,
-        subs:[{t:'Beresin meja',done:false},{t:'Ganti sprei',done:false}]})
-  ];
-}
+/* Nggak ada tugas contoh: akun baru mulai bersih, empty state + tombol
+ * "coba: ..." yang ngajarin cara pakai tanpa nambahin sampah di data. */
+if(!localStorage.getItem(KEY)) saveNow();
 render();
 document.body.classList.add('ready');
 checkMissed();
