@@ -60,7 +60,7 @@ Harus: `82 lolos, 0 gagal`.
 
 ## Dokumen lain
 
-`HANDOFF.md` untuk konteks lengkap, hasil verifikasi, dan cacat yang sudah diperbaiki.
+`HANDOFF.md` (dokumen internal, tidak ikut di repo ini) untuk konteks lengkap, hasil verifikasi, dan cacat yang sudah diperbaiki.
 `AGENTS.md` untuk aturan AI yang menyentuh kode ini.
 
 ---
